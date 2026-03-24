@@ -198,7 +198,7 @@ function LoginPage() {
                                         <div className="relative">
                                             <input
                                                 type={showPassword ? "text" : "password"}
-                                                className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 outline-none border focus:border-primary/50 transition-all font-medium pr-14"
+                                                className="login-password-input w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 outline-none border focus:border-primary/50 transition-all font-medium pr-14"
                                                 placeholder="••••••••"
                                                 value={hospitalLogin.password}
                                                 onChange={(e) => setHospitalLogin({ ...hospitalLogin, password: e.target.value })}
@@ -264,6 +264,21 @@ function LoginPage() {
                     </div>
                 </div>
             </main>
+            <style>{`
+                .login-password-input::-ms-reveal,
+                .login-password-input::-ms-clear {
+                    display: none;
+                }
+
+                .login-password-input::-webkit-credentials-auto-fill-button,
+                .login-password-input::-webkit-textfield-decoration-container {
+                    visibility: hidden;
+                    display: none !important;
+                    pointer-events: none;
+                    position: absolute;
+                    right: 0;
+                }
+            `}</style>
         </div>
     )
 }
