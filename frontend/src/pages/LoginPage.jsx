@@ -11,6 +11,7 @@ function LoginPage() {
     const [otpSent, setOtpSent] = useState(false)
     const [loading, setLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const [staffError, setStaffError] = useState("")
 
     // Patient Logic
     const [patientAuth, setPatientAuth] = useState({
@@ -62,12 +63,22 @@ function LoginPage() {
 
     const handleHospitalLogin = async (e) => {
         e.preventDefault()
-        if (!hospitalLogin.role || !hospitalLogin.username || !hospitalLogin.password) {
+        const normalizedLogin = {
+            ...hospitalLogin,
+            username: hospitalLogin.username.trim().toLowerCase(),
+            password: hospitalLogin.password
+        }
+
+        if (!normalizedLogin.role || !normalizedLogin.username || !normalizedLogin.password) {
             return alert("Please fill all fields")
         }
+
+        setStaffError("")
         setLoading(true)
         try {
-            const res = await api.post("/auth/login", hospitalLogin)
+            const res = await api.post("/auth/login", normalizedLogin, {
+                skipAuthRedirect: true,
+            })
             const loggedUser = login(res.data.token)
 
             if (loggedUser?.role) {
@@ -75,7 +86,7 @@ function LoginPage() {
             }
         } catch (err) {
             console.error("Hospital Login Error:", err)
-            alert(err.response?.data?.message || "Authentication failed")
+            setStaffError(err.response?.data?.message || "Authentication failed")
         } finally {
             setLoading(false)
         }
@@ -110,13 +121,19 @@ function LoginPage() {
                             {/* TABS */}
                             <div className="flex gap-10 mb-12 border-b dark:border-slate-800">
                                 <button
-                                    onClick={() => setActiveTab("hospital")}
+                                    onClick={() => {
+                                        setActiveTab("hospital")
+                                        setStaffError("")
+                                    }}
                                     className={`pb-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "hospital" ? "text-primary border-b-2 border-primary" : "text-slate-400"}`}
                                 >
                                     Hospital Domain
                                 </button>
                                 <button
-                                    onClick={() => setActiveTab("patient")}
+                                    onClick={() => {
+                                        setActiveTab("patient")
+                                        setStaffError("")
+                                    }}
                                     className={`pb-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === "patient" ? "text-primary border-b-2 border-primary" : "text-slate-400"}`}
                                 >
                                     Patient Domain
@@ -190,7 +207,13 @@ function LoginPage() {
                                             className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 outline-none border focus:border-primary/50 transition-all font-medium"
                                             placeholder="Enter ID"
                                             value={hospitalLogin.username}
-                                            onChange={(e) => setHospitalLogin({ ...hospitalLogin, username: e.target.value })}
+                                            autoCapitalize="none"
+                                            autoCorrect="off"
+                                            autoComplete="username"
+                                            onChange={(e) => {
+                                                setHospitalLogin({ ...hospitalLogin, username: e.target.value })
+                                                if (staffError) setStaffError("")
+                                            }}
                                         />
                                     </div>
                                     <div>
@@ -201,7 +224,11 @@ function LoginPage() {
                                                 className="login-password-input w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 outline-none border focus:border-primary/50 transition-all font-medium pr-14"
                                                 placeholder="••••••••"
                                                 value={hospitalLogin.password}
-                                                onChange={(e) => setHospitalLogin({ ...hospitalLogin, password: e.target.value })}
+                                                autoComplete="current-password"
+                                                onChange={(e) => {
+                                                    setHospitalLogin({ ...hospitalLogin, password: e.target.value })
+                                                    if (staffError) setStaffError("")
+                                                }}
                                             />
                                             <button
                                                 type="button"
@@ -219,7 +246,10 @@ function LoginPage() {
                                         <select
                                             className="w-full px-6 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800 outline-none border focus:border-primary/50 transition-all font-bold cursor-pointer appearance-none"
                                             value={hospitalLogin.role}
-                                            onChange={(e) => setHospitalLogin({ ...hospitalLogin, role: e.target.value })}
+                                            onChange={(e) => {
+                                                setHospitalLogin({ ...hospitalLogin, role: e.target.value })
+                                                if (staffError) setStaffError("")
+                                            }}
                                         >
                                             <option value="">Select Domain Access</option>
                                             <option value="doctor">Medical Doctor</option>
@@ -228,6 +258,11 @@ function LoginPage() {
                                             <option value="admin">System Root</option>
                                         </select>
                                     </div>
+                                    {staffError && (
+                                        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+                                            {staffError}
+                                        </div>
+                                    )}
                                     <button
                                         type="submit"
                                         className="w-full bg-slate-900 dark:bg-white dark:text-slate-950 text-white py-4 rounded-2xl font-bold shadow-xl hover:scale-[1.01] transition-all disabled:opacity-50"

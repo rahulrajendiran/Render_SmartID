@@ -21,19 +21,20 @@ const generateToken = (user) => {
 export const registerUser = async (req, res) => {
   try {
     const { name, username, password, role } = req.body;
+    const normalizedUsername = username?.trim().toLowerCase();
 
-    if (!name || !username || !password || !role) {
+    if (!name || !normalizedUsername || !password || !role) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const userExists = await User.findOne({ username });
+    const userExists = await User.findOne({ username: normalizedUsername });
     if (userExists) {
       return res.status(400).json({ message: 'Username already exists' });
     }
 
     const user = await User.create({
       name,
-      username,
+      username: normalizedUsername,
       password,
       role
     });
@@ -58,12 +59,13 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { username, password, role } = req.body;
+    const normalizedUsername = username?.trim().toLowerCase();
 
-    if (!username || !password) {
+    if (!normalizedUsername || !password) {
       return res.status(400).json({ message: 'Username and password required' });
     }
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: normalizedUsername });
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid username or password' });

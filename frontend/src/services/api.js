@@ -12,7 +12,9 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         const token = tokenService.get();
-        if (token) {
+        const isPublicAuthRequest = config.url?.startsWith("/auth/") || config.url?.startsWith("/otp/")
+
+        if (token && !isPublicAuthRequest) {
             config.headers.Authorization = `Bearer ${token}`
         }
         return config
@@ -24,15 +26,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        const shouldSkipAuthRedirect = error.config?.skipAuthRedirect
+        const status = error.response?.status
+        const isPublicAuthRequest = error.config?.url?.startsWith("/auth/") || error.config?.url?.startsWith("/otp/")
+
         if (
-            error.response &&
-            (error.response.status === 401 ||
-                error.response.status === 403)
+            !shouldSkipAuthRedirect &&
+            !isPublicAuthRequest &&
+            status === 401
         ) {
             tokenService.clear();
             alert("Session expired. Please login again.")
-            // Using window.location.reload() to force a reset to login state
-            window.location.reload()
+            window.location.assign("/")
         }
 
         return Promise.reject(error)
