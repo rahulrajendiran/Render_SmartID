@@ -1,0 +1,35 @@
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/AuthProvider";
+
+export default function HospitalHeader() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+
+    return (
+        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
+            <div className="flex items-center gap-4">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Hospital Control Center</h2>
+            </div>
+
+            <div className="flex items-center gap-6">
+                <button
+                    onClick={() => navigate("/hospital/register")}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-md shadow-emerald-600/10"
+                >
+                    <span className="material-symbols-outlined text-lg">person_add</span>
+                    Register New Patient
+                </button>
+
+                <div className="flex items-center gap-3">
+                    <div className="text-right hidden sm:block">
+                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{user?.name || "Hospital Admin"}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{user?.role}</p>
+                    </div>
+                    <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                        {user?.name?.charAt(0) || "H"}
+                    </div>
+                </div>
+            </div>
+        </header>
+    );
+}

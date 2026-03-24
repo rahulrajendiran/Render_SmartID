@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Health Sync Login</title>
+
+  <!-- Tailwind CDN (temporary, safe for UI phase) -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700" rel="stylesheet" />
+
+  <!-- Tailwind config -->
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#49A09D",
+            "background-light": "#FFFFFF",
+            "background-dark": "#0F172A",
+          },
+          fontFamily: {
+            display: ["Inter", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style type="text/tailwindcss">
+    .custom-shape {
+        border-radius: 40% 60% 60% 40% / 50% 50% 50% 50%;
+      }
+      .active-tab {
+        border-bottom: 2px solid #49A09D;
+        color: #49A09D;
+      }
+    </style>
+</head>
+
+<body class="font-display bg-background-light dark:bg-background-dark">
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
