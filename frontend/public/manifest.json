@@ -1,0 +1,23 @@
+{
+  "name": "Smart-ID Health System",
+  "short_name": "Smart-ID",
+  "description": "Secure health identity management system with NFC, biometric authentication, and emergency access features.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#0F172A",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
