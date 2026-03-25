@@ -109,7 +109,7 @@ const patientSchema = new mongoose.Schema(
 patientSchema.index({ phone: 1 });
 patientSchema.index({ fullName: 1 });
 patientSchema.index({ fullName: 1, phone: 1 });
-patientSchema.index({ fingerprintId: 1 });
+// Note: fingerprintId already has unique index from schema definition
 patientSchema.index({ govtId: 1 });
 patientSchema.index({ dob: 1 });
 patientSchema.index({ age: 1 });
