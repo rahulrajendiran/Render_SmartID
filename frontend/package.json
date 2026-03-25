@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lhci": "lhci autorun",
+    "lhci:mobile": "lhci autorun --config=./lighthouserc.mobile.json"
   },
   "dependencies": {
     "axios": "^1.13.4",
@@ -23,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@lhci/cli": "^0.13.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",

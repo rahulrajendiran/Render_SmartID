@@ -1,0 +1,82 @@
+{
+  "budgets": [
+    {
+      "resourceSizes": [
+        {
+          "resourceType": "total",
+          "budget": 500
+        },
+        {
+          "resourceType": "script",
+          "budget": 150
+        },
+        {
+          "resourceType": "image",
+          "budget": 100
+        },
+        {
+          "resourceType": "stylesheet",
+          "budget": 50
+        },
+        {
+          "resourceType": "document",
+          "budget": 10
+        },
+        {
+          "resourceType": "font",
+          "budget": 50
+        },
+        {
+          "resourceType": "media",
+          "budget": 25
+        },
+        {
+          "resourceType": "other",
+          "budget": 50
+        }
+      ],
+      "resourceCounts": [
+        {
+          "resourceType": "third-party",
+          "budget": 15
+        },
+        {
+          "resourceType": "total",
+          "budget": 75
+        }
+      ]
+    }
+  ],
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "width": 375,
+      "height": 667
+    }
+  ],
+  "tasks": {
+    "lcp": {
+      "warnAfter": 2500,
+      "errorAfter": 4000
+    },
+    "fid": {
+      "warnAfter": 100,
+      "errorAfter": 300
+    },
+    "cls": {
+      "warnAfter": 0.1,
+      "errorAfter": 0.25
+    },
+    "fcp": {
+      "warnAfter": 2000,
+      "errorAfter": 4000
+    },
+    "ttfb": {
+      "warnAfter": 600,
+      "errorAfter": 1800
+    }
+  }
+}
