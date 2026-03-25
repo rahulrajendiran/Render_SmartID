@@ -5,10 +5,7 @@
         "url": [
           "http://localhost:4173"
         ],
-        "numberOfRuns": 3,
-        "startServerCommand": "npm run preview -- --host 0.0.0.0 --port 4173",
-        "startServerReadyPattern": "http://localhost:4173",
-        "startServerReadyTimeout": 30000
+        "numberOfRuns": 3
       }
     },
     "assert": {
