@@ -16,6 +16,7 @@ import RegisterPatient from "./pages/hospital/register/RegisterPatient"
 import Step1Personal from "./pages/hospital/register/Step1Personal"
 import Step2Contact from "./pages/hospital/register/Step2Contact"
 import Step3Medical from "./pages/hospital/register/Step3Medical"
+import Step4FingerAuth from "./pages/hospital/register/Step4FingerAuth"
 import RegisterSuccess from "./pages/hospital/register/RegisterSuccess"
 import OtpAuth from "./pages/hospital/OtpAuth"
 import BiometricAuth from "./pages/hospital/BiometricAuth"
@@ -100,6 +101,7 @@ function App() {
           <Route index element={<Step1Personal />} />
           <Route path="contact" element={<Step2Contact />} />
           <Route path="medical" element={<Step3Medical />} />
+          <Route path="fingerprint" element={<Step4FingerAuth />} />
         </Route>
         <Route path="clinical-note/auth" element={<OtpAuth />} />
         <Route path="clinical-note/biometric" element={<BiometricAuth />} />

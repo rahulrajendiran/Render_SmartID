@@ -26,6 +26,8 @@ export default function RegisterSuccess() {
         weightKg,
         allergies,
         surgeries,
+        fingerId,
+        fingerprintEnrolled,
     } = state;
 
     return (
@@ -61,7 +63,7 @@ export default function RegisterSuccess() {
 
                     <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
                         Patient <span className="font-bold text-slate-900 dark:text-white">{patientName}</span>{" "}
-                        has been successfully registered and their Smart-ID card is now active.
+                        has been successfully registered{fingerprintEnrolled ? " with biometric fingerprint enrolled" : ""} and their Smart-ID card is now active.
                     </p>
 
                     {/* Summary Card */}
@@ -86,6 +88,24 @@ export default function RegisterSuccess() {
                         <div className="flex justify-between py-4 border-b border-slate-100 dark:border-slate-800">
                             <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">Blood Group</span>
                             <span className="font-bold text-slate-800 dark:text-white">{bloodGroup}</span>
+                        </div>
+                        <div className="flex justify-between py-4 border-b border-slate-100 dark:border-slate-800">
+                            <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">Fingerprint</span>
+                            <span className="flex items-center gap-2">
+                                {fingerprintEnrolled ? (
+                                    <>
+                                        <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-sm">fingerprint</span>
+                                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                            Enrolled
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined text-amber-500 text-sm">fingerprint</span>
+                                        <span className="font-bold text-amber-500">Pending</span>
+                                    </>
+                                )}
+                            </span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-4 py-3">

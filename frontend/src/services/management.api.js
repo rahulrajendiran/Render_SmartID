@@ -37,6 +37,11 @@ const hospitalAPI = {
         return res.data;
     },
 
+    enrollFingerprint: async (patientId) => {
+        const res = await api.post("/nfc/enroll", { patientId });
+        return res.data;
+    },
+
     // Emergency Override
     authenticateEmergencyManager: async (credentials) => {
         const res = await api.post("/hospital/emergency/auth", credentials);

@@ -8,6 +8,7 @@ export default function RegisterPatient() {
         { path: "/hospital/register", label: "Personal Info", icon: "person" },
         { path: "/hospital/register/contact", label: "Contact Details", icon: "call" },
         { path: "/hospital/register/medical", label: "Medical & NFC", icon: "medical_services" },
+        { path: "/hospital/register/fingerprint", label: "Fingerprint", icon: "fingerprint" },
     ];
 
     const currentStepIndex = steps.findIndex(step =>

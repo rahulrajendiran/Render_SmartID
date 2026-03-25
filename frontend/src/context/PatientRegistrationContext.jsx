@@ -8,6 +8,7 @@ export function PatientRegistrationProvider({ children }) {
         contact: {},
         medical: {},
         nfcId: null,
+        fingerprintId: null,
     });
 
     const update = (section, values) =>

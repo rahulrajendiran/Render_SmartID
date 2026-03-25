@@ -1,6 +1,7 @@
 import Patient from '../models/Patient.js';
 import Otp from '../models/Otp.js';
 import { callHardwareBridge, isHardwareBridgeConfigured } from '../utils/hardwareGateway.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 // 1️⃣ Handle NFC Card Tap (from Raspberry Pi)
 export const handleNfcScan = async (req, res) => {
@@ -136,6 +137,70 @@ export const generateHardwareOtp = async (req, res) => {
   } catch (error) {
     console.error("Error generating OTP:", error);
     res.status(500).json({ message: "Failed to generate OTP" });
+  }
+};
+
+// 4️⃣ Enroll Fingerprint (store template ID in Atlas)
+export const enrollFingerprint = async (req, res) => {
+  try {
+    const { patientId } = req.body;
+
+    if (!patientId) {
+      return res.status(400).json({ message: "Patient ID is required for fingerprint enrollment" });
+    }
+
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
+    }
+
+    if (patient.fingerprintId) {
+      return res.status(409).json({ message: "Fingerprint already enrolled for this patient" });
+    }
+
+    if (!isHardwareBridgeConfigured()) {
+      return res.status(503).json({
+        message: "Hardware bridge is not configured. Please connect the Raspberry Pi fingerprint reader."
+      });
+    }
+
+    const hardwareResponse = await callHardwareBridge("/fingerprint/enroll", {
+      method: "POST",
+      body: { patientId }
+    });
+
+    const fingerId = hardwareResponse?.finger_id || hardwareResponse?.fingerId;
+
+    if (!fingerId) {
+      return res.status(500).json({
+        message: hardwareResponse?.message || "Fingerprint enrollment failed — no template ID returned from hardware bridge"
+      });
+    }
+
+    patient.fingerprintId = fingerId;
+    await patient.save();
+
+    await logAudit({
+      actor: req.user._id,
+      actorRole: req.user.role,
+      action: "ENROLL_FINGERPRINT",
+      patient: patient._id,
+      resource: "PATIENT_BIOMETRIC",
+      ipAddress: req.ip
+    });
+
+    res.json({
+      success: true,
+      message: "Fingerprint enrolled successfully",
+      patientId: patient._id,
+      fingerId
+    });
+
+  } catch (error) {
+    console.error("Error enrolling fingerprint:", error);
+    res.status(error.status || 500).json({
+      message: error.message || "Fingerprint enrollment failed"
+    });
   }
 };
 

@@ -61,7 +61,7 @@ export default function Step3Medical() {
                 const response = await hospitalAPI.registerPatient(payload);
                 console.log("Registration success:", response);
 
-                navigate("/hospital/register/success", {
+                navigate("/hospital/register/fingerprint", {
                     state: {
                         patientName: response.fullName,
                         patientId: response.patientId,

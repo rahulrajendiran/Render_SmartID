@@ -1,11 +1,13 @@
 import express from "express";
 import { protect } from "../middleware/auth.middleware.js";
+import { authorizeRoles } from "../middleware/role.middleware.js";
 import Patient from "../models/Patient.js";
 import { 
     handleNfcScan, 
     verifyFingerprint, 
     generateHardwareOtp,
-    getPatientByNfc 
+    getPatientByNfc,
+    enrollFingerprint 
 } from "../controllers/nfc.controller.js";
 
 const router = express.Router();
@@ -22,6 +24,17 @@ router.post("/fingerprint", verifyFingerprint);
 
 // 3️⃣ Raspberry Pi requests OTP to send via SIM800L
 router.post("/generate-otp", generateHardwareOtp);
+
+// ==========================================
+// 🟢 FINGERPRINT ENROLLMENT (Frontend → Hospital Staff)
+// ==========================================
+
+router.post(
+  "/enroll",
+  protect,
+  authorizeRoles("hospital"),
+  enrollFingerprint
+);
 
 
 // ==========================================
