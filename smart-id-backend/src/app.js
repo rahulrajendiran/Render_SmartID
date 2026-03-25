@@ -30,6 +30,9 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
 
+// Trust Render's reverse proxy (required for rate limiting behind proxy)
+app.set('trust proxy', 1);
+
 // =====================
 // SECURITY MIDDLEWARE
 // =====================
