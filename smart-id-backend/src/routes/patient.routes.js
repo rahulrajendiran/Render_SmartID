@@ -119,17 +119,24 @@ router.post(
 );
 
 // ===============================
-// NFC DIRECT GET ROUTE
+// NFC DIRECT GET ROUTE (Protected)
 // ===============================
 
-// Get patient via NFC UID (fallback wrapper if accessed via /api/patient/:uid rather than /api/nfc/patient/:uid)
+// Get patient via NFC UID - Requires authentication
 router.get(
   '/:uid',
+  protect,
+  authorizeRoles('hospital', 'doctor', 'admin'),
   async (req, res) => {
     try {
       const patient = await Patient.findOne({
         nfcUuid: req.params.uid
       });
+      
+      if (!patient) {
+        return res.status(404).json({ message: 'Patient not found' });
+      }
+      
       res.json(patient);
     } catch (error) {
       console.error(error);

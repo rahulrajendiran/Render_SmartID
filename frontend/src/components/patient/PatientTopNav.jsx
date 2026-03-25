@@ -1,4 +1,5 @@
 import { useAuth } from "../../auth/AuthProvider";
+import ThemeToggle from "../ThemeToggle";
 
 export default function TopNav() {
     const { user } = useAuth();
@@ -11,6 +12,7 @@ export default function TopNav() {
                     <span className="font-bold text-xl tracking-tight text-slate-800 dark:text-emerald-50">SmartID Patient</span>
                 </div>
                 <div className="flex items-center gap-4 text-sm font-medium text-slate-600 dark:text-emerald-200/60">
+                    <ThemeToggle className="border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-emerald-900/30 dark:bg-[#16302c] dark:text-emerald-100 dark:hover:bg-[#1b3833]" />
                     <div className="text-right hidden sm:block">
                         <p className="font-bold text-slate-800 dark:text-emerald-50">{user?.name || "Patient"}</p>
                         <p className="text-[10px] uppercase tracking-widest opacity-60">ID #{user?.id?.substring(0, 8)}</p>

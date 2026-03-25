@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
+import ThemeToggle from "../ThemeToggle";
 
 export default function HospitalHeader() {
     const { user } = useAuth();
@@ -12,6 +13,7 @@ export default function HospitalHeader() {
             </div>
 
             <div className="flex items-center gap-6">
+                <ThemeToggle className="border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" />
                 <button
                     onClick={() => navigate("/hospital/register")}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-md shadow-emerald-600/10"

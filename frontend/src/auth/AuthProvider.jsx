@@ -36,7 +36,9 @@ export function AuthProvider({ children }) {
         tokenService.set(token);
         const decodedUser = hydrateUserFromToken();
         setUser(decodedUser);
-        console.log("AuthProvider: Login successful", decodedUser);
+        if (import.meta.env.DEV) {
+            console.log("AuthProvider: Login successful", decodedUser);
+        }
         return decodedUser; // Returning user for immediate navigation
     };
 

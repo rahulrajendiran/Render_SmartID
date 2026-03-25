@@ -73,9 +73,17 @@ export const respondToConsent = async (req, res) => {
       return res.status(400).json({ message: 'Invalid action' });
     }
 
-    const consent = await Consent.findById(consentId);
+    // Get patient's user ID from JWT
+    const patientUserId = req.user.id;
+
+    // Verify the patient owns this consent before allowing response
+    const consent = await Consent.findOne({ 
+      _id: consentId,
+      patient: req.user.patientId 
+    }).populate('patient');
+
     if (!consent) {
-      return res.status(404).json({ message: 'Consent not found' });
+      return res.status(404).json({ message: 'Consent not found or unauthorized' });
     }
 
     consent.status = action;
@@ -98,9 +106,14 @@ export const revokeConsent = async (req, res) => {
   try {
     const { consentId } = req.body;
 
-    const consent = await Consent.findById(consentId);
+    // Verify the patient owns this consent before allowing revoke
+    const consent = await Consent.findOne({ 
+      _id: consentId,
+      patient: req.user.patientId 
+    });
+
     if (!consent) {
-      return res.status(404).json({ message: 'Consent not found' });
+      return res.status(404).json({ message: 'Consent not found or unauthorized' });
     }
 
     consent.status = 'revoked';

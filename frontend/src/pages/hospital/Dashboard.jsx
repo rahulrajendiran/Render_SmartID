@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useSession } from '../../context/SessionContext';
 import hospitalApi from '../../services/hospital.api';
 import hospitalManagementApi from '../../services/management.api';
@@ -26,37 +27,38 @@ export default function HospitalDashboard() {
 
     useEffect(() => {
         let active = true;
+        const fetchCounter = { current: 0 };
 
-        Promise.all([
-            hospitalApi.getStats(),
-            hospitalApi.getPatientFlow(),
-            hospitalApi.getRecentActivity(),
-            hospitalApi.getSystemHealth(),
-        ])
-            .then(([statsResponse, flowResponse, activityResponse, healthResponse]) => {
-                if (!active) {
-                    return;
-                }
+        const fetchData = async () => {
+            fetchCounter.current++;
+
+            try {
+                const [statsResponse, flowResponse, activityResponse, healthResponse] = await Promise.all([
+                    hospitalApi.getStats(),
+                    hospitalApi.getPatientFlow(),
+                    hospitalApi.getRecentActivity(),
+                    hospitalApi.getSystemHealth(),
+                ]);
+
+                if (!active) return;
 
                 setStats(statsResponse || emptyStats);
                 setPatientFlow(flowResponse || []);
                 setActivity(activityResponse || []);
                 setSystemHealth(healthResponse || null);
                 setError(null);
-            })
-            .catch((requestError) => {
-                if (!active) {
-                    return;
-                }
-
+            } catch (requestError) {
+                if (!active) return;
                 console.error('Failed to load hospital dashboard data:', requestError);
                 setError('Unable to load live hospital data right now.');
-            })
-            .finally(() => {
-                if (active) {
+            } finally {
+                if (active && fetchCounter.current === 1) {
                     setLoading(false);
                 }
-            });
+            }
+        };
+
+        fetchData();
 
         return () => {
             active = false;
@@ -68,11 +70,11 @@ export default function HospitalDashboard() {
         return Math.max(...values, 1);
     }, [patientFlow]);
 
-    const handleStartLookup = async (uid) => {
+    const handleStartLookup = useCallback(async (uid) => {
         const normalizedUid = uid?.trim();
 
         if (!normalizedUid) {
-            alert('Enter or scan an NFC UID first.');
+            toast.error('Enter or scan an NFC UID first.');
             return;
         }
 
@@ -86,15 +88,16 @@ export default function HospitalDashboard() {
                 location: patientData.location || 'Hospital intake',
             });
             setLookupUid(normalizedUid);
+            toast.success('Patient loaded successfully');
         } catch (lookupError) {
             console.error('Failed to load patient session:', lookupError);
-            alert(lookupError.response?.data?.message || 'Unable to load patient from backend.');
+            toast.error(lookupError.response?.data?.message || 'Unable to load patient from backend.');
         } finally {
             setLookupLoading(false);
         }
-    };
+    }, [setPatient]);
 
-    const handleHardwareScan = async () => {
+    const handleHardwareScan = useCallback(async () => {
         setLookupLoading(true);
 
         try {
@@ -106,10 +109,10 @@ export default function HospitalDashboard() {
             await handleStartLookup(scanResponse.uid);
         } catch (scanError) {
             console.error('Hardware scan failed:', scanError);
-            alert(scanError.response?.data?.message || scanError.message || 'Hardware scan failed.');
+            toast.error(scanError.response?.data?.message || scanError.message || 'Hardware scan failed.');
             setLookupLoading(false);
         }
-    };
+    }, [handleStartLookup]);
 
     return (
         <div className="p-8 space-y-8 bg-slate-50 dark:bg-slate-950 min-h-full">
@@ -252,7 +255,7 @@ export default function HospitalDashboard() {
     );
 }
 
-function Stat({ label, value, icon, tone }) {
+const Stat = memo(function Stat({ label, value, icon, tone }) {
     const tones = {
         blue: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-300',
         emerald: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-300',
@@ -271,9 +274,9 @@ function Stat({ label, value, icon, tone }) {
             <h4 className="text-2xl font-bold text-slate-800 dark:text-white mt-1">{value ?? 0}</h4>
         </div>
     );
-}
+});
 
-function PatientFlowChart({ loading, patientFlow, maxFlow }) {
+const PatientFlowChart = memo(function PatientFlowChart({ loading, patientFlow, maxFlow }) {
     return (
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 h-[400px] flex flex-col shadow-sm">
             <div className="flex justify-between items-center mb-6">
@@ -305,9 +308,9 @@ function PatientFlowChart({ loading, patientFlow, maxFlow }) {
             )}
         </div>
     );
-}
+});
 
-function SystemHealth({ systemHealth }) {
+const SystemHealth = memo(function SystemHealth({ systemHealth }) {
     const services = [
         { name: 'API', status: systemHealth?.api || 'unknown' },
         { name: 'Database', status: systemHealth?.database || 'unknown' },
@@ -344,4 +347,4 @@ function SystemHealth({ systemHealth }) {
             <p className="mt-6 text-xs text-slate-400">Last check: {systemHealth?.lastCheck ? new Date(systemHealth.lastCheck).toLocaleString() : 'N/A'}</p>
         </div>
     );
-}
+});

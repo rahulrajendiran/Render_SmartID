@@ -4,7 +4,7 @@ import AdminTopNav from "../components/admin/AdminTopNav";
 
 export default function AdminLayout() {
     return (
-        <div className="flex h-screen overflow-hidden bg-[#0a0f1c] text-white">
+        <div className="flex h-screen overflow-hidden bg-slate-100 text-slate-900 dark:bg-[#0a0f1c] dark:text-white">
             <AdminSidebar />
             <div className="flex flex-col flex-1">
                 <AdminTopNav />

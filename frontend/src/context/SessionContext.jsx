@@ -5,9 +5,12 @@ const SessionContext = createContext(null);
 export const SessionProvider = ({ children }) => {
     const [patient, setPatient] = useState(null);
     const [otpVerified, setOtpVerified] = useState(false);
-    const [authMethod, setAuthMethod] = useState(null); // "patient" | "nominee"
+    const [authMethod, setAuthMethod] = useState(null); // "PATIENT" | "NOMINEE"
     const [fingerprintVerified, setFingerprintVerified] = useState(false);
     const [sessionStartedAt, setSessionStartedAt] = useState(null);
+    
+    // Nominee information
+    const [nomineeInfo, setNomineeInfo] = useState(null); // { name, phone }
 
     // Emergency Override State
     const [emergencyMode, setEmergencyMode] = useState(false);
@@ -23,6 +26,15 @@ export const SessionProvider = ({ children }) => {
         setEmergencyBy(null);
         setEmergencyReason(null);
         setSessionStartedAt(new Date().toISOString());
+        setNomineeInfo(null);
+        
+        // Extract nominee info from patient data if available
+        if (patientData?.emergencyContact) {
+            setNomineeInfo({
+                name: patientData.emergencyContact.name || null,
+                phone: patientData.emergencyContact.phone || null
+            });
+        }
     }, []);
 
     const resetSession = useCallback(() => {
@@ -34,6 +46,7 @@ export const SessionProvider = ({ children }) => {
         setEmergencyBy(null);
         setEmergencyReason(null);
         setSessionStartedAt(null);
+        setNomineeInfo(null);
     }, []);
 
     return (
@@ -46,6 +59,8 @@ export const SessionProvider = ({ children }) => {
             setAuthMethod,
             fingerprintVerified,
             setFingerprintVerified,
+            nomineeInfo,
+            setNomineeInfo,
             emergencyMode,
             setEmergencyMode,
             emergencyBy,

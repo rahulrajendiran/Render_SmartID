@@ -16,20 +16,62 @@ const hospitalAPI = {
         return res.data;
     },
 
-    // OTP Consent flow
-    sendOtp: async (phone) => {
-        const res = await api.post("/otp/send-otp", { phone });
+    // OTP Consent flow - Patient OTP
+    sendOtp: async (phone, patientId) => {
+        const res = await api.post("/otp/send-otp", { 
+            phone,
+            purpose: 'consent',
+            isNominee: false,
+            patientId 
+        });
         return res.data;
     },
-    verifyOtp: async (payload) => {
-        const res = await api.post("/otp/verify-otp", payload);
+    
+    // OTP Consent flow - Nominee OTP
+    sendNomineeOtp: async (phone, patientId) => {
+        const res = await api.post("/otp/send-otp", { 
+            phone,
+            purpose: 'consent',
+            isNominee: true,
+            patientId 
+        });
         return res.data;
     },
-    resendOtp: async (phone) => {
-        const res = await api.post("/otp/send-otp", { phone });
+    
+    // Verify OTP - Patient
+    verifyOtp: async (phone, otp, patientId) => {
+        const res = await api.post("/otp/verify-otp", { 
+            phone, 
+            otp,
+            purpose: 'consent',
+            isNominee: false,
+            patientId 
+        });
         return res.data;
     },
-    // sendNomineeOtp: (patientId) => api.post("/hospital/otp/send-nominee", { patientId }), // No backend match yet
+    
+    // Verify OTP - Nominee
+    verifyNomineeOtp: async (phone, otp, patientId) => {
+        const res = await api.post("/otp/verify-otp", { 
+            phone, 
+            otp,
+            purpose: 'consent',
+            isNominee: true,
+            patientId 
+        });
+        return res.data;
+    },
+    
+    // Resend OTP based on consent type
+    resendOtp: async (phone, patientId, isNominee = false) => {
+        const res = await api.post("/otp/send-otp", { 
+            phone,
+            purpose: 'consent',
+            isNominee,
+            patientId 
+        });
+        return res.data;
+    },
 
     // Biometric Verification
     verifyBiometric: async (payload) => {
@@ -57,6 +99,12 @@ const hospitalAPI = {
     // Statistics
     getStats: async () => {
         const res = await api.get("/hospital/stats");
+        return res.data;
+    },
+    
+    // Get Patient Full Details (for nominee info)
+    getPatientDetails: async (patientId) => {
+        const res = await api.get(`/patient/${patientId}/view`);
         return res.data;
     },
 };

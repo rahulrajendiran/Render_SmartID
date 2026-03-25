@@ -5,22 +5,25 @@ export default function MedicalShopDashboard() {
     const [patient, setPatient] = useState(null);
     const [loading, setLoading] = useState(false);
     const [uid, setUid] = useState("");
+    const [error, setError] = useState("");
 
     useEffect(() => {
         // Since we removed WebSockets, we won't listen for pushed real-time data anymore.
     }, []);
 
-    // The button scan can remain to trigger a fetch fallback,
-    // but the system is waiting for the real hardware event
-    const handleScan = async () => {
-        if (!uid.trim()) {
-            alert("Enter or scan an NFC UID first.");
+    const loadPatientByUid = async (nextUid) => {
+        const normalizedUid = nextUid.trim();
+
+        if (!normalizedUid) {
+            setError("Enter or scan an NFC UID first.");
             return;
         }
 
         setLoading(true);
+        setError("");
         try {
-            const data = await medicalShopApi.scanNFC(uid.trim());
+            const data = await medicalShopApi.scanNFC(normalizedUid);
+            setUid(normalizedUid);
             if (data && data.patient) {
                 setPatient({
                     ...data.patient,
@@ -30,7 +33,43 @@ export default function MedicalShopDashboard() {
             }
         } catch (err) {
             console.error("Scan error:", err);
-            alert("NFC Scan Failed. Please try again.");
+            setPatient(null);
+            setError(err.response?.data?.message || "NFC Scan Failed. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleScan = async () => {
+        await loadPatientByUid(uid);
+    };
+
+    const handleHardwareTap = async () => {
+        setLoading(true);
+        setError("");
+        setPatient(null);
+
+        try {
+            const scanData = await medicalShopApi.scanHardwareNfc();
+            const scannedUid = scanData?.uid || scanData?.patient?.nfcId || scanData?.patient?.nfcUuid;
+
+            if (!scannedUid) {
+                throw new Error("No NFC UID was returned by the hardware reader.");
+            }
+
+            setUid(scannedUid);
+            const patientData = await medicalShopApi.scanNFC(scannedUid);
+
+            if (patientData?.patient) {
+                setPatient({
+                    ...patientData.patient,
+                    name: patientData.patient.fullName || patientData.patient.name || "Unknown Patient",
+                    prescriptions: patientData.patient.prescriptions || []
+                });
+            }
+        } catch (err) {
+            console.error("Hardware scan error:", err);
+            setError(err.response?.data?.message || err.message || "Hardware scan failed. You can still enter the UID manually.");
         } finally {
             setLoading(false);
         }
@@ -44,7 +83,7 @@ export default function MedicalShopDashboard() {
         );
     };
 
-    return (
+        return (
         <div className="max-w-4xl mx-auto px-6">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-light text-slate-900 dark:text-white mb-3">
@@ -58,7 +97,12 @@ export default function MedicalShopDashboard() {
             {/* NFC SCAN SURFACE */}
             {!patient && (
                 <div className="mx-auto max-w-sm bg-white dark:bg-slate-900 rounded-[3rem] p-8 shadow-2xl shadow-primary/5 border border-slate-100 dark:border-slate-800 overflow-hidden">
-                    <div className="relative flex flex-col items-center justify-center text-center overflow-hidden aspect-square rounded-[2rem] border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-950/60 mb-6">
+                    <button
+                        type="button"
+                        onClick={handleHardwareTap}
+                        disabled={loading}
+                        className="relative mb-6 flex aspect-square w-full flex-col items-center justify-center overflow-hidden rounded-[2rem] border border-dashed border-slate-200 bg-slate-50/60 text-center transition-all hover:border-primary/40 hover:bg-slate-100/80 disabled:cursor-not-allowed disabled:opacity-80 dark:border-slate-700 dark:bg-slate-950/60 dark:hover:bg-slate-900"
+                    >
                         <div className="absolute inset-0 bg-primary/5 scale-0 hover:scale-100 transition-transform duration-700 rounded-full"></div>
                         <div className="relative w-28 h-28 rounded-full bg-primary/10 flex items-center justify-center mb-8">
                             <span className="material-symbols-outlined text-primary text-6xl animate-pulse">
@@ -68,7 +112,7 @@ export default function MedicalShopDashboard() {
 
                         <h2 className="relative text-2xl font-bold text-slate-900 dark:text-white">Scan Patient Card</h2>
                         <p className="relative text-slate-500 mt-2 font-medium px-6">
-                            Use the NFC UID captured by the reader to load live prescriptions.
+                            Tap here to read from the live hardware reader and load prescriptions instantly.
                         </p>
 
                         {loading && (
@@ -79,7 +123,7 @@ export default function MedicalShopDashboard() {
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </button>
 
                     <div className="space-y-4">
                         <label className="block text-[10px] uppercase tracking-widest text-slate-400 font-bold">NFC UID</label>
@@ -97,8 +141,13 @@ export default function MedicalShopDashboard() {
                         >
                             {loading ? "Scanning..." : "Load Patient Prescriptions"}
                         </button>
+                        {error && (
+                            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/30 dark:bg-red-950/30 dark:text-red-300">
+                                {error}
+                            </div>
+                        )}
                         <p className="text-xs text-slate-400 font-medium text-center">
-                            Tip: hardware readers can paste the UID here automatically.
+                            Tip: tap above for immediate hardware scan, or enter the UID here manually.
                         </p>
                     </div>
                 </div>

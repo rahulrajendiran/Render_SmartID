@@ -79,36 +79,44 @@ export const getAuditLogs = async (_req, res) => {
 
 export const getUsers = async (_req, res) => {
   try {
-    const [users, latestLogins] = await Promise.all([
-      User.find().sort({ createdAt: -1 }).lean(),
-      LoginAudit.find({ status: 'LOGIN_SUCCESS' }).sort({ createdAt: -1 }).lean()
+    // Use aggregation pipeline to optimize and combine queries
+    const users = await User.aggregate([
+      {
+        $lookup: {
+          from: 'patients',
+          localField: '_id',
+          foreignField: 'user',
+          as: 'patientData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'loginaudits',
+          let: { userPhone: { $arrayElemAt: ['$patientData.phone', 0] } },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$phone', '$$userPhone'] }, status: 'LOGIN_SUCCESS' } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 1 }
+          ],
+          as: 'lastLoginData'
+        }
+      },
+      {
+        $project: {
+          id: '$_id',
+          name: 1,
+          role: 1,
+          username: 1,
+          status: 'active',
+          lastLogin: { $arrayElemAt: ['$lastLoginData.createdAt', 0] },
+          phone: { $arrayElemAt: ['$patientData.phone', 0] },
+          hospital: { $cond: [{ $eq: ['$role', 'hospital'] }, '$name', 'Unified Network'] }
+        }
+      },
+      { $sort: { createdAt: -1 } }
     ]);
 
-    const lastLoginByPhone = new Map(
-      latestLogins.map((log) => [log.phone, log.createdAt])
-    );
-
-    const patients = await Patient.find({ user: { $in: users.map((user) => user._id) } })
-      .select('user phone')
-      .lean();
-
-    const patientPhoneByUserId = new Map(
-      patients.map((patient) => [String(patient.user), patient.phone])
-    );
-
-    res.json(
-      users.map((user) => ({
-        id: user._id,
-        name: user.name,
-        role: user.role,
-        status: 'active',
-        lastLogin: patientPhoneByUserId.get(String(user._id))
-          ? lastLoginByPhone.get(patientPhoneByUserId.get(String(user._id))) || null
-          : null,
-        username: user.username,
-        hospital: user.role === 'hospital' ? user.name : 'Unified Network'
-      }))
-    );
+    res.json(users);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to fetch users' });

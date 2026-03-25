@@ -1,29 +1,41 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getPendingScans } from "../services/db.service";
+
+const POLLING_INTERVAL = 30 * 1000; // 30 seconds (optimized from 5s)
 
 export default function OfflineStatus() {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [pendingCount, setPendingCount] = useState(0);
 
+    const checkPendingScans = useCallback(async () => {
+        if (navigator.onLine) {
+            const pending = await getPendingScans();
+            setPendingCount(pending.length);
+        }
+    }, []);
+
     useEffect(() => {
-        const handleOnline = () => setIsOnline(true);
+        const handleOnline = () => {
+            setIsOnline(true);
+            checkPendingScans();
+        };
         const handleOffline = () => setIsOnline(false);
 
         window.addEventListener("online", handleOnline);
         window.addEventListener("offline", handleOffline);
 
-        // Check pending scans every 5 seconds
-        const interval = setInterval(async () => {
-            const pending = await getPendingScans();
-            setPendingCount(pending.length);
-        }, 5000);
+        // Initial check
+        checkPendingScans();
+
+        // Optimized polling interval (30 seconds)
+        const interval = setInterval(checkPendingScans, POLLING_INTERVAL);
 
         return () => {
             window.removeEventListener("online", handleOnline);
             window.removeEventListener("offline", handleOffline);
             clearInterval(interval);
         };
-    }, []);
+    }, [checkPendingScans]);
 
     if (isOnline && pendingCount === 0) return null;
 

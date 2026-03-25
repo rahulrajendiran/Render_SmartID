@@ -8,7 +8,10 @@ import Permissions from "../pages/admin/Permissions";
 
 export default function AdminRoutes() {
     const { user } = useAuth();
-    console.log("AdminRoutes Mounting. Role:", user?.role);
+    
+    if (import.meta.env.DEV) {
+        console.log("AdminRoutes Mounting. Role:", user?.role);
+    }
 
     if (!user || user.role !== ROLES.ADMIN) {
         return (

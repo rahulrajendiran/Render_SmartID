@@ -1,10 +1,15 @@
 import axios from "axios"
+import toast from "react-hot-toast"
 import tokenService from "./token.service";
 
-const baseURL = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api`;
+const baseURL = import.meta.env.VITE_API_URL;
+
+if (!baseURL) {
+    console.error("VITE_API_URL is not configured. API calls will fail.");
+}
 
 const api = axios.create({
-    baseURL,
+    baseURL: baseURL ? `${baseURL}/api` : undefined,
     timeout: 10000,
 })
 
@@ -36,7 +41,7 @@ api.interceptors.response.use(
             status === 401
         ) {
             tokenService.clear();
-            alert("Session expired. Please login again.")
+            toast.error("Session expired. Please login again.");
             window.location.assign("/")
         }
 

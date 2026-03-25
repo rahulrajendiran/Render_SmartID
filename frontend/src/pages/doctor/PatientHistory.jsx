@@ -41,7 +41,7 @@ export default function PatientHistory() {
                                     <td className="px-8 py-5">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-500 font-bold text-xs">
-                                                {r.patientName.split(' ').map(n => n[0]).join('')}
+                                                {r.patientName?.split(' ').map(n => n?.[0]).join('') || '??'}
                                             </div>
                                             <span className="font-semibold">{r.patientName}</span>
                                         </div>

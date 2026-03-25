@@ -38,10 +38,10 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ role: 1, createdAt: -1 });
 
-// 🔐 Hash password
+// 🔐 Hash password with increased cost factor (12 rounds)
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
-  this.password = await bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 12);
 });
 
 // 🔑 Compare password

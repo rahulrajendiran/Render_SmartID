@@ -1,7 +1,35 @@
-const hospitals = [];
+import { useEffect, useState } from "react";
 import { recommendHospital } from "../../utils/recommendHospital";
+import hospitalApi from "../../services/hospital.api";
 
 export default function RecommendedHospital({ scheme }) {
+    const [hospitals, setHospitals] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHospitals = async () => {
+            try {
+                const data = await hospitalApi.getHospitals();
+                setHospitals(data || []);
+            } catch (err) {
+                console.error('Failed to fetch hospitals:', err);
+                setHospitals([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchHospitals();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="mt-6 p-6 bg-slate-900/50 rounded-2xl border border-slate-800 text-xs font-bold text-slate-500 flex items-center gap-3">
+                <span className="material-symbols-outlined text-sm animate-pulse">hourglass_empty</span>
+                Loading recommendations...
+            </div>
+        );
+    }
+
     const hospital = recommendHospital(scheme, hospitals);
 
     if (!hospital) {
