@@ -214,7 +214,7 @@ export const savePermissions = async (req, res) => {
     const updated = await Permission.findOneAndUpdate(
       { role },
       { permissions, updatedAt: new Date() },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
     
     res.json({

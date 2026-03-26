@@ -167,7 +167,7 @@ export const verifyOtp = async (req, res) => {
             const updatedRecord = await Otp.findOneAndUpdate(
                 { phone, purpose: consentPurpose, attempts: { $lt: 3 } },
                 { $inc: { attempts: 1 } },
-                { new: true }
+                { returnDocument: 'after' }
             );
 
             if (!updatedRecord || updatedRecord.attempts >= 3) {

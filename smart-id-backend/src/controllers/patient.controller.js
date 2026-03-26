@@ -197,7 +197,7 @@ export const updateMyPatientProfile = async (req, res) => {
     const patient = await Patient.findOneAndUpdate(
       { user: req.user._id },
       updates,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
 
     if (!patient) {
