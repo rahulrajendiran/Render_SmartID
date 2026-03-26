@@ -1,6 +1,7 @@
 import AuditLog from '../models/AuditLog.js';
 import LoginAudit from '../models/LoginAudit.js';
 import Patient from '../models/Patient.js';
+import Permission from '../models/Permission.js';
 import User from '../models/User.js';
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -186,10 +187,44 @@ export const searchPatients = async (req, res) => {
   }
 };
 
+export const getPermissions = async (_req, res) => {
+  try {
+    const permissions = await Permission.find().lean();
+    
+    const formatted = permissions.reduce((acc, perm) => {
+      acc[perm.role] = perm.permissions;
+      return acc;
+    }, {});
+    
+    res.json(formatted);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch permissions' });
+  }
+};
+
 export const savePermissions = async (req, res) => {
-  res.json({
-    success: true,
-    message: 'Permissions saved',
-    permissions: req.body
-  });
+  try {
+    const { role, permissions } = req.body;
+    
+    if (!role || !permissions) {
+      return res.status(400).json({ message: 'Role and permissions are required' });
+    }
+    
+    const updated = await Permission.findOneAndUpdate(
+      { role },
+      { permissions, updatedAt: new Date() },
+      { upsert: true, new: true }
+    );
+    
+    res.json({
+      success: true,
+      message: 'Permissions saved successfully',
+      role: updated.role,
+      permissions: updated.permissions
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to save permissions' });
+  }
 };
