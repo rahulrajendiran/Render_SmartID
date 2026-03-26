@@ -12,6 +12,7 @@ import {
 } from '../controllers/patient.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from '../middleware/role.middleware.js';
+import { checkPermission } from '../middleware/permission.middleware.js';
 import { checkConsent } from '../middleware/consent.middleware.js';
 import Patient from '../models/Patient.js';
 
@@ -26,6 +27,7 @@ router.post(
   '/register',
   protect,
   authorizeRoles('hospital'),
+  checkPermission('patient_register'),
   registerPatientByHospital
 );
 
@@ -62,6 +64,7 @@ router.get(
   '/prescriptions',
   protect,
   authorizeRoles('patient'),
+  checkPermission('prescription_view'),
   getMyPatientPrescriptions
 );
 
@@ -82,6 +85,7 @@ router.get(
   '/:patientId/view',
   protect,
   authorizeRoles('doctor', 'hospital'),
+  checkPermission('identity_view'),
   checkConsent,
   async (req, res) => {
     try {
@@ -115,6 +119,7 @@ router.post(
   '/:patientId/notes',
   protect,
   authorizeRoles('doctor', 'hospital', 'admin'),
+  checkPermission('emr_write'),
   addClinicalNote
 );
 

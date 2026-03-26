@@ -7,14 +7,16 @@ import {
 } from '../controllers/consent.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from '../middleware/role.middleware.js';
+import { checkPermission } from '../middleware/permission.middleware.js';
 
 const router = express.Router();
 
-// 🧑‍⚕️ / 🏥 Request consent (Doctor / Hospital)
+// 🧑‍⚕️ / 🏥 Request consent (Doctor / Hospital) - needs consent_manage
 router.post(
   '/request',
   protect,
   authorizeRoles('doctor', 'hospital'),
+  checkPermission('consent_manage'),
   requestConsent
 );
 

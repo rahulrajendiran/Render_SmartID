@@ -1,6 +1,7 @@
 import express from "express";
 import { protect } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
+import { checkPermission } from "../middleware/permission.middleware.js";
 import Patient from "../models/Patient.js";
 import { 
     handleNfcScan, 
@@ -42,7 +43,7 @@ router.post(
 // ==========================================
 
 // 🏥 Scan NFC (Simplified/Auth version for demo dashboards)
-router.get("/patients/nfc/:id", protect, async (req, res) => {
+router.get("/patients/nfc/:id", protect, checkPermission('patient_search'), async (req, res) => {
     try {
         const patient = await Patient.findOne({ nfcUuid: req.params.id })
             .populate('user', 'name username');
@@ -65,6 +66,6 @@ router.get("/patients/nfc/:id", protect, async (req, res) => {
 });
 
 // Primary lookup route via GET
-router.get("/patient/:nfcId", protect, getPatientByNfc);
+router.get("/patient/:nfcId", protect, checkPermission('patient_search'), getPatientByNfc);
 
 export default router;

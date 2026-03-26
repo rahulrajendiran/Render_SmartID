@@ -8,6 +8,7 @@ import {
 } from '../controllers/hospital.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from '../middleware/role.middleware.js';
+import { checkPermission } from '../middleware/permission.middleware.js';
 
 const router = express.Router();
 
@@ -25,6 +26,8 @@ router.get('/activity', authorizeRoles('hospital'), getRecentActivity);
 
 // System health status
 router.get('/health', authorizeRoles('hospital', 'admin'), getSystemHealth);
-router.post('/emergency/auth', authorizeRoles('hospital', 'admin'), authenticateEmergencyManager);
+
+// Emergency authentication - needs emergency_bypass permission
+router.post('/emergency/auth', authorizeRoles('hospital', 'admin'), checkPermission('emergency_bypass'), authenticateEmergencyManager);
 
 export default router;

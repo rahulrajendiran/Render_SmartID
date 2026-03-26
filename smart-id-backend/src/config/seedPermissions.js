@@ -76,13 +76,12 @@ const defaultPermissions = [
 export const seedPermissions = async () => {
   try {
     for (const perm of defaultPermissions) {
-      await Permission.findOneAndUpdate(
-        { role: perm.role },
-        { ...perm, updatedAt: new Date() },
-        { upsert: true, returnDocument: 'after' }
-      );
+      const exists = await Permission.findOne({ role: perm.role });
+      if (!exists) {
+        await Permission.create(perm);
+      }
     }
-    console.log('✅ Permissions seeded successfully');
+    console.log('✅ Permissions seeded successfully (existing permissions preserved)');
   } catch (error) {
     console.error('❌ Error seeding permissions:', error);
   }
