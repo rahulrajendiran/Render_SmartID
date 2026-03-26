@@ -52,8 +52,15 @@ export default function Permissions() {
     try {
       setLoading(true);
       const data = await adminApi.getPermissions();
-      setPermissions(data);
-      setOriginalPermissions(JSON.parse(JSON.stringify(data)));
+      
+      // Convert lowercase API keys to uppercase (API returns: { hospital: {...} }, Frontend needs: { HOSPITAL: {...} })
+      const formatted = {};
+      for (const [key, value] of Object.entries(data)) {
+        formatted[key.toUpperCase()] = value;
+      }
+      
+      setPermissions(formatted);
+      setOriginalPermissions(JSON.parse(JSON.stringify(formatted)));
     } catch (error) {
       console.error('Failed to load permissions:', error);
       toast.error('Failed to load permissions');
