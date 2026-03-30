@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
-import medicalShopApi from "../../services/medicalShop.api";
+import api from "../../services/api";
 
 export default function PrescriptionViewer() {
     const { id } = useParams();
@@ -12,21 +12,27 @@ export default function PrescriptionViewer() {
     useEffect(() => {
         let isMounted = true;
 
-        medicalShopApi.fetchPrescriptionPDF(id)
-            .then((blob) => {
+        const fetchPdf = async () => {
+            try {
+                const response = await api.get(
+                    `/medical-shop/prescriptions/${id}/pdf`,
+                    { responseType: "blob" }
+                );
+                
                 if (!isMounted) return;
-                const url = URL.createObjectURL(blob);
+                const url = URL.createObjectURL(response.data);
                 urlRef.current = url;
                 setPdfUrl(url);
-            })
-            .catch((err) => {
+            } catch (err) {
                 if (!isMounted) return;
                 console.error("PDF Fetch failed:", err);
                 toast.error("Unauthorized or expired session. Please re-scan the patient card.");
-            })
-            .finally(() => {
+            } finally {
                 if (isMounted) setLoading(false);
-            });
+            }
+        };
+
+        fetchPdf();
 
         return () => {
             isMounted = false;

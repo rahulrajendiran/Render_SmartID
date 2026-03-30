@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import patientApi from "../../services/patient.api";
+import toast from "react-hot-toast";
 
 export default function Dashboard() {
     const [emr, setEmr] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         patientApi.getPatientEMR()
@@ -18,6 +20,30 @@ export default function Dashboard() {
                 setLoading(false);
             });
     }, []);
+
+    const downloadPDF = async (type) => {
+        setExporting(true);
+        try {
+            const blob = type === 'profile' 
+                ? await patientApi.exportProfilePDF()
+                : await patientApi.exportMedicalHistoryPDF();
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = type === 'profile' ? 'smart-id-profile.pdf' : 'smart-id-medical-history.pdf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success('PDF downloaded successfully');
+        } catch (err) {
+            console.error('PDF export failed:', err);
+            toast.error('Failed to export PDF. Please try again.');
+        } finally {
+            setExporting(false);
+        }
+    };
 
     if (loading) return (
         <div className="flex items-center justify-center p-20">
@@ -40,10 +66,24 @@ export default function Dashboard() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-slate-800 dark:text-emerald-50">Medical History</h1>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-emerald-900/40 rounded-xl text-sm font-bold text-slate-600 dark:text-emerald-200/60 hover:bg-slate-50 transition-all">
-                    <span className="material-symbols-outlined text-sm">download</span>
-                    Export PDF
-                </button>
+                <div className="flex gap-3">
+                    <button 
+                        onClick={() => downloadPDF('profile')}
+                        disabled={exporting}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-emerald-900/40 rounded-xl text-sm font-bold text-slate-600 dark:text-emerald-200/60 hover:bg-slate-50 transition-all disabled:opacity-50"
+                    >
+                        <span className="material-symbols-outlined text-sm">badge</span>
+                        Profile PDF
+                    </button>
+                    <button 
+                        onClick={() => downloadPDF('history')}
+                        disabled={exporting}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50"
+                    >
+                        <span className="material-symbols-outlined text-sm">download</span>
+                        {exporting ? 'Exporting...' : 'Export History PDF'}
+                    </button>
+                </div>
             </div>
 
             {visits.length === 0 ? (

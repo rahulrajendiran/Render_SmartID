@@ -8,7 +8,9 @@ import {
   getMyPatientEMR,
   getMyPatientRecords,
   getMyPatientPrescriptions,
-  addClinicalNote
+  addClinicalNote,
+  exportPatientPDF,
+  exportMedicalHistoryPDF
 } from '../controllers/patient.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from '../middleware/role.middleware.js';
@@ -121,6 +123,21 @@ router.post(
   authorizeRoles('doctor', 'hospital', 'admin'),
   checkPermission('emr_write'),
   addClinicalNote
+);
+
+// PDF Export Routes
+router.get(
+  '/export/profile/pdf',
+  protect,
+  authorizeRoles('patient'),
+  exportPatientPDF
+);
+
+router.get(
+  '/export/history/pdf',
+  protect,
+  authorizeRoles('patient'),
+  exportMedicalHistoryPDF
 );
 
 // ===============================

@@ -138,7 +138,7 @@ function App() {
 
         {/* SECURE PRESCRIPTION VIEWER */}
         <Route
-          path="/medical-shop/prescription/:id"
+          path="/medical-shop/prescriptions/:id"
           element={
             <ProtectedRoute allowedRoles={[ROLES.MEDICAL_SHOP]}>
               <PrescriptionViewer />
@@ -146,7 +146,6 @@ function App() {
           }
         />
 
-        <Route path="/admin-test" element={<div className="p-20 text-white bg-red-600 font-black">ROUTING TEST SUCCESSFUL</div>} />
         <Route path="/unauthorized" element={<div className="p-20 text-center text-red-500 font-bold">Unauthorized Access</div>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

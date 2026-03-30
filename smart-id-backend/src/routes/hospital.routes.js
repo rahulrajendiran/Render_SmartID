@@ -4,7 +4,11 @@ import {
   getPatientFlow,
   getRecentActivity,
   getSystemHealth,
-  authenticateEmergencyManager
+  authenticateEmergencyManager,
+  getHospitals,
+  createHospital,
+  getHospitalById,
+  getAvailableSchemes
 } from '../controllers/hospital.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from '../middleware/role.middleware.js';
@@ -29,5 +33,13 @@ router.get('/health', authorizeRoles('hospital', 'admin'), getSystemHealth);
 
 // Emergency authentication - needs emergency_bypass permission
 router.post('/emergency/auth', authorizeRoles('hospital', 'admin'), checkPermission('emergency_bypass'), authenticateEmergencyManager);
+
+// Hospital directory - accessible to all authenticated users
+router.get('/hospitals', getHospitals);
+router.get('/schemes', getAvailableSchemes);
+
+// Hospital management
+router.post('/', authorizeRoles('admin', 'hospital'), createHospital);
+router.get('/:id', authorizeRoles('admin', 'hospital'), getHospitalById);
 
 export default router;

@@ -28,6 +28,14 @@ const patientApi = {
     verifyOtp: async (phone, otp, idToken) => {
         const res = await api.post("/otp/verify-otp", { phone, otp, idToken });
         return res.data;
+    },
+    exportProfilePDF: async () => {
+        const res = await api.get("/patient/export/profile/pdf", { responseType: "blob" });
+        return res.data;
+    },
+    exportMedicalHistoryPDF: async () => {
+        const res = await api.get("/patient/export/history/pdf", { responseType: "blob" });
+        return res.data;
     }
 };
 

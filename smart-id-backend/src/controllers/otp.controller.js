@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import LoginAudit from "../models/LoginAudit.js";
 import Patient from "../models/Patient.js";
+import { emitToPatient, emitToMedicalStaff } from "../config/socket.js";
+import smsService from "../utils/smsService.js";
 
 // Timing-safe OTP comparison to prevent timing attacks
 const safeCompareOTP = (inputOtp, storedOtp) => {
@@ -89,25 +91,12 @@ export const sendOtp = async (req, res) => {
             ? SMS_MESSAGES.NOMINEE(otp, patientName)
             : SMS_MESSAGES.PATIENT(otp);
 
-        const smsGatewayUrl = process.env.SMS_GATEWAY_URL;
-
-        if (smsGatewayUrl) {
-            const smsResponse = await fetch(smsGatewayUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    phone: finalPhone, 
-                    message: smsMessage,
-                    isNominee 
-                })
-            });
-
-            if (!smsResponse.ok) {
-                throw new Error(`SMS gateway failed with status ${smsResponse.status}`);
-            }
-        } else {
-            console.warn("SMS_GATEWAY_URL not configured. OTP generated without external SMS dispatch.");
-            console.log(`[DEV] SMS would be sent to ${finalPhone}: ${smsMessage}`);
+        try {
+            const smsResult = await smsService.send(finalPhone, smsMessage);
+            console.log('SMS sent successfully:', smsResult.messageId);
+        } catch (smsError) {
+            console.error('SMS send failed:', smsError.message);
+            console.warn('OTP generated but SMS delivery failed. OTP:', otp);
         }
 
         // Record Audit Event
@@ -130,6 +119,27 @@ export const sendOtp = async (req, res) => {
             nomineeName: nomineeName || null,
             recipientPhone: finalPhone.slice(0, 3) + '*****' + finalPhone.slice(-4)
         });
+
+        // Emit real-time notification via Socket.IO
+        try {
+            if (patientId) {
+                emitToPatient(patientId, 'otp-status', {
+                    status: isNominee ? 'nominee-sent' : 'sent',
+                    purpose,
+                    recipientPhone: finalPhone.slice(0, 3) + '*****' + finalPhone.slice(-4),
+                    timestamp: new Date()
+                });
+            }
+
+            emitToMedicalStaff('otp-sent', {
+                patientId,
+                isNominee,
+                recipientPhone: finalPhone.slice(0, 3) + '*****' + finalPhone.slice(-4),
+                timestamp: new Date()
+            });
+        } catch (socketError) {
+            console.warn('Socket.IO notification failed:', socketError.message);
+        }
 
     } catch (err) {
         console.error(err.response?.data || err);

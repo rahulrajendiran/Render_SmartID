@@ -1,21 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import adminApi from "../../services/admin.api";
 import toast from "react-hot-toast";
 
 const PERMISSIONS_LIST = [
-  { key: 'patient_register', label: 'Patient Register' },
-  { key: 'emr_write', label: 'EMR Write' },
-  { key: 'identity_view', label: 'Identity View' },
-  { key: 'patient_search', label: 'Patient Search' },
-  { key: 'prescription_view', label: 'Prescription View' },
-  { key: 'prescription_create', label: 'Prescription Create' },
-  { key: 'emergency_bypass', label: 'Emergency Bypass' },
-  { key: 'consent_manage', label: 'Consent Manage' },
-  { key: 'user_manage', label: 'User Manage' }
+  { key: 'patient_register', label: 'Patient Register', icon: 'person_add', category: 'registration' },
+  { key: 'emr_write', label: 'EMR Write', icon: 'edit_note', category: 'clinical' },
+  { key: 'identity_view', label: 'Identity View', icon: 'visibility', category: 'access' },
+  { key: 'patient_search', label: 'Patient Search', icon: 'search', category: 'access' },
+  { key: 'prescription_view', label: 'Prescription View', icon: 'medication', category: 'clinical' },
+  { key: 'prescription_create', label: 'Prescription Create', icon: ' prescription', category: 'clinical' },
+  { key: 'emergency_bypass', label: 'Emergency Bypass', icon: 'emergency', category: 'emergency' },
+  { key: 'consent_manage', label: 'Consent Manage', icon: 'verified_user', category: 'consent' },
+  { key: 'user_manage', label: 'User Manage', icon: 'manage_accounts', category: 'admin' }
 ];
 
 const ROLES = ['HOSPITAL', 'DOCTOR', 'PATIENT', 'MEDICAL_SHOP'];
+
+const ROLE_COLORS = {
+  HOSPITAL: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-500', icon: 'local_hospital' },
+  DOCTOR: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-500', icon: 'medical_services' },
+  PATIENT: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-500', icon: 'person' },
+  MEDICAL_SHOP: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-500', icon: 'local_pharmacy' }
+};
+
+const CATEGORY_COLORS = {
+  registration: 'bg-emerald-500',
+  clinical: 'bg-blue-500',
+  access: 'bg-purple-500',
+  emergency: 'bg-red-500',
+  consent: 'bg-cyan-500',
+  admin: 'bg-orange-500'
+};
 
 function ToggleSwitch({ enabled, onChange }) {
   return (
@@ -117,6 +133,37 @@ export default function Permissions() {
 
   const pendingCount = getPendingCount();
 
+  const permissionStats = useMemo(() => {
+    const stats = {};
+    ROLES.forEach(role => {
+      const rolePerms = Object.values(permissions[role] || {}).filter(Boolean).length;
+      stats[role] = {
+        total: PERMISSIONS_LIST.length,
+        enabled: rolePerms,
+        percentage: Math.round((rolePerms / PERMISSIONS_LIST.length) * 100)
+      };
+    });
+    return stats;
+  }, [permissions]);
+
+  const categoryDistribution = useMemo(() => {
+    const categories = {};
+    PERMISSIONS_LIST.forEach(perm => {
+      if (!categories[perm.category]) {
+        categories[perm.category] = { count: 0, roles: [] };
+      }
+      ROLES.forEach(role => {
+        if (permissions[role]?.[perm.key]) {
+          categories[perm.category].count++;
+          if (!categories[perm.category].roles.includes(role)) {
+            categories[perm.category].roles.push(role);
+          }
+        }
+      });
+    });
+    return categories;
+  }, [permissions]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -188,10 +235,131 @@ export default function Permissions() {
           </table>
         </div>
 
-        <div className={`mt-10 h-64 flex flex-col items-center justify-center border-2 border-dashed rounded-3xl group transition-all ${isDark ? "text-slate-500 border-slate-800 bg-slate-900/50 hover:border-emerald-500/20" : "text-slate-400 border-slate-200 bg-slate-50 hover:border-emerald-400/30"}`}>
-          <span className="material-symbols-outlined text-4xl mb-2 group-hover:scale-110 transition-transform">analytics</span>
-          <p className="font-bold text-sm">Interactive Permissions Hierachy View</p>
-          <p className="text-[10px] opacity-60">Visual interface for node-based logic</p>
+        <div className={`mt-10 p-8 border rounded-3xl ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+          <h4 className={`text-lg font-black mb-6 ${isDark ? "text-white" : "text-slate-900"}`}>
+            Permission Distribution Overview
+          </h4>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Role-wise Permission Bar Chart */}
+            <div className="space-y-4">
+              <h5 className={`text-xs font-black uppercase tracking-widest ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                Role Access Coverage
+              </h5>
+              {ROLES.map(role => {
+                const stats = permissionStats[role];
+                const colors = ROLE_COLORS[role];
+                return (
+                  <div key={role} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className={`material-symbols-outlined text-sm ${colors.text}`}>{colors.icon}</span>
+                        <span className={`text-sm font-bold ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                          {role.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <span className={`text-sm font-black ${isDark ? "text-white" : "text-slate-900"}`}>
+                        {stats.enabled}/{stats.total} ({stats.percentage}%)
+                      </span>
+                    </div>
+                    <div className={`h-3 rounded-full overflow-hidden ${isDark ? "bg-slate-800" : "bg-slate-200"}`}>
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${colors.text.replace('text-', 'bg-')}`}
+                        style={{ width: `${stats.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Category Distribution */}
+            <div className="space-y-4">
+              <h5 className={`text-xs font-black uppercase tracking-widest ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                Permission Categories
+              </h5>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(categoryDistribution).map(([category, data]) => (
+                  <div 
+                    key={category}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200"}`}
+                  >
+                    <div 
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: CATEGORY_COLORS[category] }}
+                    />
+                    <span className={`text-xs font-bold capitalize ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      {category}
+                    </span>
+                    <span className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                      ({data.count})
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Quick Access Grid */}
+              <div className={`mt-6 p-4 rounded-2xl ${isDark ? "bg-slate-800/50" : "bg-white border border-slate-200"}`}>
+                <h5 className={`text-xs font-black uppercase tracking-widest mb-4 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  Quick Access Matrix
+                </h5>
+                <div className="grid grid-cols-4 gap-2">
+                  {PERMISSIONS_LIST.slice(0, 8).map(perm => (
+                    <div 
+                      key={perm.key}
+                      className="flex items-center gap-1"
+                    >
+                      <div 
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: CATEGORY_COLORS[perm.category] }}
+                      />
+                      <span className={`text-[10px] truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                        {perm.label.split(' ')[0]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Stats */}
+          <div className={`mt-8 pt-6 border-t ${isDark ? "border-slate-700" : "border-slate-200"}`}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className={`p-4 rounded-2xl text-center ${isDark ? "bg-slate-800/50" : "bg-slate-100"}`}>
+                <div className={`text-2xl font-black ${isDark ? "text-white" : "text-slate-900"}`}>
+                  {ROLES.length}
+                </div>
+                <div className={`text-xs uppercase tracking-widest ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  Roles
+                </div>
+              </div>
+              <div className={`p-4 rounded-2xl text-center ${isDark ? "bg-slate-800/50" : "bg-slate-100"}`}>
+                <div className={`text-2xl font-black ${isDark ? "text-white" : "text-slate-900"}`}>
+                  {PERMISSIONS_LIST.length}
+                </div>
+                <div className={`text-xs uppercase tracking-widest ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  Permissions
+                </div>
+              </div>
+              <div className={`p-4 rounded-2xl text-center ${isDark ? "bg-slate-800/50" : "bg-slate-100"}`}>
+                <div className={`text-2xl font-black ${isDark ? "text-white" : "text-slate-900"}`}>
+                  {pendingCount}
+                </div>
+                <div className={`text-xs uppercase tracking-widest ${isDark ? "text-amber-500" : "text-amber-600"}`}>
+                  Pending
+                </div>
+              </div>
+              <div className={`p-4 rounded-2xl text-center ${isDark ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-emerald-50 border border-emerald-200"}`}>
+                <div className={`text-2xl font-black ${isDark ? "text-emerald-500" : "text-emerald-600"}`}>
+                  {PERMISSIONS_LIST.length * ROLES.length - pendingCount}
+                </div>
+                <div className={`text-xs uppercase tracking-widest ${isDark ? "text-emerald-400" : "text-emerald-500"}`}>
+                  Active Rules
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

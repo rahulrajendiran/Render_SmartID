@@ -337,7 +337,8 @@ export const registerPatientByHospital = async (req, res) => {
 
 export const getMyPatientEMR = async (req, res) => {
   try {
-    const patient = await Patient.findOne({ user: req.user.id }).populate('user', 'name username role');
+    const userId = req.user._id || req.user.id;
+    const patient = await Patient.findOne({ user: userId }).populate('user', 'name username role');
 
     if (!patient) {
       return res.status(404).json({ message: 'Patient profile not found' });
@@ -363,7 +364,8 @@ export const getMyPatientEMR = async (req, res) => {
 
 export const getMyPatientRecords = async (req, res) => {
   try {
-    const patient = await Patient.findOne({ user: req.user.id }).populate('user', 'name username role');
+    const userId = req.user._id || req.user.id;
+    const patient = await Patient.findOne({ user: userId }).populate('user', 'name username role');
 
     if (!patient) {
       return res.status(404).json({ message: 'Patient profile not found' });
@@ -381,7 +383,8 @@ export const getMyPatientRecords = async (req, res) => {
 
 export const getMyPatientPrescriptions = async (req, res) => {
   try {
-    const patient = await Patient.findOne({ user: req.user.id });
+    const userId = req.user._id || req.user.id;
+    const patient = await Patient.findOne({ user: userId });
 
     if (!patient) {
       return res.status(404).json({ message: 'Patient profile not found' });
@@ -403,6 +406,7 @@ export const getMyPatientPrescriptions = async (req, res) => {
 
 export const addClinicalNote = async (req, res) => {
   try {
+    const userId = req.user._id || req.user.id;
     const patient = await Patient.findById(req.params.patientId);
 
     if (!patient) {
@@ -419,7 +423,7 @@ export const addClinicalNote = async (req, res) => {
     await patient.save();
 
     await logAudit({
-      actor: req.user.id,
+      actor: userId,
       actorRole: req.user.role,
       action: req.body.mode === 'EMERGENCY' ? 'EMERGENCY_CLINICAL_NOTE' : 'ADD_CLINICAL_NOTE',
       patient: patient._id,
@@ -436,4 +440,180 @@ export const addClinicalNote = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'Server error while saving clinical note' });
   }
+};
+
+export const exportPatientPDF = async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id;
+    const patient = await Patient.findOne({ user: userId }).populate('user', 'name username email role');
+
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient profile not found' });
+    }
+
+    const pdfBuffer = buildPatientPDF(patient);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="smart-id-profile-${patient._id}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to export patient PDF' });
+  }
+};
+
+export const exportMedicalHistoryPDF = async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id;
+    const patient = await Patient.findOne({ user: userId }).populate('user', 'name username email role');
+
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient profile not found' });
+    }
+
+    const pdfBuffer = buildMedicalHistoryPDF(patient);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="smart-id-medical-history-${patient._id}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to export medical history PDF' });
+  }
+};
+
+const buildPatientPDF = (patient) => {
+  const escapePdfText = (value) => String(value || 'N/A')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+
+  const content = [
+    'BT',
+    '/F1 18 Tf',
+    '50 760 Td',
+    `(${escapePdfText('Smart-ID Patient Profile')}) Tj`,
+    '/F1 12 Tf',
+    '0 -30 Td',
+    `(${escapePdfText('Generated: ' + new Date().toLocaleString())}) Tj`,
+    '0 -30 Td',
+    '0 -20 Td',
+    `(${escapePdfText('Full Name: ' + patient.fullName)}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Health ID: ' + (patient.user?.username || 'N/A'))}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Date of Birth: ' + (patient.dob ? new Date(patient.dob).toLocaleDateString() : 'N/A'))}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Age: ' + patient.age + ' years')}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Gender: ' + patient.gender)}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Blood Group: ' + patient.bloodGroup)}) Tj`,
+    '0 -30 Td',
+    `(${escapePdfText('Contact Information')}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Phone: ' + patient.phone)}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Email: ' + (patient.user?.email || 'N/A'))}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Address: ' + patient.address)}) Tj`,
+    '0 -30 Td',
+    `(${escapePdfText('Emergency Contact')}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Name: ' + (patient.emergencyContact?.name || 'N/A'))}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Phone: ' + (patient.emergencyContact?.phone || 'N/A'))}) Tj`,
+    '0 -30 Td',
+    `(${escapePdfText('Medical Information')}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Allergies: ' + (patient.allergies?.join(', ') || 'None'))}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Surgeries: ' + (patient.surgeries?.join(', ') || 'None'))}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Height: ' + (patient.heightCm ? patient.heightCm + ' cm' : 'N/A'))}) Tj`,
+    '0 -20 Td',
+    `(${escapePdfText('Weight: ' + (patient.weightKg ? patient.weightKg + ' kg' : 'N/A'))}) Tj`,
+    '0 -40 Td',
+    '/F1 10 Tf',
+    `(${escapePdfText('This document was generated by Smart-ID Healthcare Platform.')}) Tj`,
+    '0 -15 Td',
+    `(${escapePdfText('For any queries, contact support@smart-id.health')}) Tj`,
+    'ET'
+  ].join('\n');
+
+  return generatePDFDocument(content);
+};
+
+const buildMedicalHistoryPDF = (patient) => {
+  const escapePdfText = (value) => String(value || 'N/A')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+
+  const medicalHistory = patient.medicalHistory || [];
+  let yOffset = 760;
+  const lineHeight = 20;
+  const content = ['BT', '/F1 18 Tf', '50 ' + yOffset + ' Td', '(${escapePdfText(\'Smart-ID Medical History\')}) Tj'];
+
+  yOffset -= 30;
+  content.push('/F1 12 Tf', '0 ' + yOffset + ' Td', `(${escapePdfText('Patient: ' + patient.fullName)}) Tj`);
+  yOffset -= 20;
+  content.push('0 ' + yOffset + ' Td', `(${escapePdfText('Health ID: ' + (patient.user?.username || 'N/A'))}) Tj`);
+  yOffset -= 20;
+  content.push('0 ' + yOffset + ' Td', `(${escapePdfText('Generated: ' + new Date().toLocaleString())}) Tj`);
+
+  yOffset -= 40;
+  content.push('/F1 14 Tf', '0 ' + yOffset + ' Td', `(${escapePdfText('Medical Records (' + medicalHistory.length + ')')}) Tj`);
+
+  if (medicalHistory.length === 0) {
+    yOffset -= lineHeight;
+    content.push('/F1 12 Tf', '0 ' + yOffset + ' Td', `(${escapePdfText('No medical history records found.')}) Tj`);
+  } else {
+    medicalHistory.forEach((record, index) => {
+      yOffset -= lineHeight;
+      if (yOffset < 100) return;
+
+      content.push('/F1 12 Tf', '0 ' + yOffset + ' Td', `(${escapePdfText((index + 1) + '. ' + (record.condition || 'Clinical Note'))}) Tj`);
+      yOffset -= lineHeight;
+      content.push('0 ' + yOffset + ' Td', `(${escapePdfText('Date: ' + (record.diagnosedDate ? new Date(record.diagnosedDate).toLocaleDateString() : 'N/A'))}) Tj`);
+      yOffset -= lineHeight;
+      content.push('0 ' + yOffset + ' Td', `(${escapePdfText('Notes: ' + (record.notes || 'No additional notes'))}) Tj`);
+      yOffset -= 10;
+    });
+  }
+
+  yOffset -= 40;
+  content.push('/F1 10 Tf', '0 ' + yOffset + ' Td', `(${escapePdfText('This document was generated by Smart-ID Healthcare Platform.')}) Tj`);
+  yOffset -= 15;
+  content.push('0 ' + yOffset + ' Td', `(${escapePdfText('For any queries, contact support@smart-id.health')}) Tj`);
+  content.push('ET');
+
+  return generatePDFDocument(content.join('\n'));
+};
+
+const generatePDFDocument = (content) => {
+  const objects = [];
+  objects.push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj');
+  objects.push('2 0 obj\n<< /Type /Pages /Count 1 /Kids [3 0 R] >>\nendobj');
+  objects.push('3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj');
+  objects.push('4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj');
+  objects.push(`5 0 obj\n<< /Length ${Buffer.byteLength(content, 'utf8')} >>\nstream\n${content}\nendstream\nendobj`);
+
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+
+  for (const obj of objects) {
+    offsets.push(Buffer.byteLength(pdf, 'utf8'));
+    pdf += `${obj}\n`;
+  }
+
+  const xrefOffset = Buffer.byteLength(pdf, 'utf8');
+  pdf += `xref\n0 ${objects.length + 1}\n`;
+  pdf += '0000000000 65535 f \n';
+  for (let i = 1; i <= objects.length; i += 1) {
+    pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  return Buffer.from(pdf, 'utf8');
 };

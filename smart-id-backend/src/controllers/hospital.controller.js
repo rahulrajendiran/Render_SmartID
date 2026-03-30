@@ -2,6 +2,7 @@ import Patient from '../models/Patient.js';
 import User from '../models/User.js';
 import AuditLog from '../models/AuditLog.js';
 import Consent from '../models/Consent.js';
+import Hospital from '../models/Hospital.js';
 import { callHardwareBridge, normalizeHardwareStatus } from '../utils/hardwareGateway.js';
 
 export const authenticateEmergencyManager = async (req, res) => {
@@ -12,7 +13,24 @@ export const authenticateEmergencyManager = async (req, res) => {
       return res.status(400).json({ message: 'Password is required' });
     }
 
-    const user = await User.findById(req.user.id);
+    const emergencyPassword = process.env.EMERGENCY_PASSWORD;
+
+    if (emergencyPassword && password === emergencyPassword) {
+      const user = await User.findById(req.user._id || req.user.id);
+      
+      return res.json({
+        allowed: true,
+        authorized: true,
+        method: 'emergency_password',
+        user: user ? {
+          id: user._id,
+          name: user.name,
+          role: user.role
+        } : null
+      });
+    }
+
+    const user = await User.findById(req.user._id || req.user.id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -27,6 +45,7 @@ export const authenticateEmergencyManager = async (req, res) => {
     res.json({
       allowed: true,
       authorized: true,
+      method: 'user_password',
       user: {
         id: user._id,
         name: user.name,
@@ -178,7 +197,126 @@ export const getSystemHealth = async (req, res) => {
     };
 
     res.json(health);
-  } catch (error) {
+    } catch (error) {
     res.status(500).json({ message: 'Failed to fetch system health' });
+  }
+};
+
+export const getHospitals = async (req, res) => {
+  try {
+    const { scheme, city, type, emergency } = req.query;
+    
+    const filter = { active: true };
+    
+    if (scheme) {
+      filter['empanelled.scheme'] = scheme;
+      filter['empanelled.active'] = true;
+    }
+    
+    if (city) {
+      filter['address.city'] = { $regex: new RegExp(city, 'i') };
+    }
+    
+    if (type) {
+      filter.type = type;
+    }
+    
+    if (emergency === 'true') {
+      filter.emergencyServices = true;
+    }
+
+    const hospitals = await Hospital.find(filter)
+      .select('name address city phone type specialty emergencyServices ambulanceService empanelled services facilities claimSuccessRate isGovernment hasEmergency bedCount')
+      .lean();
+
+    const formatted = hospitals.map(h => ({
+      id: h._id,
+      name: h.name,
+      city: h.address?.city || 'Unknown',
+      phone: h.phone,
+      type: h.type,
+      specialty: h.specialty || [],
+      emergencyServices: h.emergencyServices,
+      ambulanceService: h.ambulanceService,
+      schemes: h.empanelled?.filter(e => e.active).map(e => e.scheme) || [],
+      services: h.services || [],
+      facilities: h.facilities || [],
+      claimSuccessRate: h.claimSuccessRate || 85,
+      isGovernment: h.isGovernment || h.type === 'government',
+      hasEmergency: h.hasEmergency || h.emergencyServices,
+      bedCount: h.bedCount || 0,
+      distanceKm: 0
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('Get hospitals error:', error);
+    res.status(500).json({ message: 'Failed to fetch hospitals' });
+  }
+};
+
+export const createHospital = async (req, res) => {
+  try {
+    const hospitalData = {
+      ...req.body,
+      user: req.user._id || req.user.id,
+      isGovernment: req.body.type === 'government',
+      hasEmergency: req.body.emergencyServices
+    };
+
+    const hospital = await Hospital.create(hospitalData);
+
+    await AuditLog.create({
+      actor: req.user._id || req.user.id,
+      actorRole: req.user.role,
+      action: 'CREATE_HOSPITAL',
+      resource: 'HOSPITAL_PROFILE',
+      ipAddress: req.ip
+    });
+
+    res.status(201).json({
+      message: 'Hospital registered successfully',
+      hospital: hospital.toPublicJSON()
+    });
+  } catch (error) {
+    console.error('Create hospital error:', error);
+    res.status(500).json({ message: 'Failed to create hospital' });
+  }
+};
+
+export const getHospitalById = async (req, res) => {
+  try {
+    const hospital = await Hospital.findById(req.params.id).lean();
+
+    if (!hospital) {
+      return res.status(404).json({ message: 'Hospital not found' });
+    }
+
+    res.json(hospital.toPublicJSON ? hospital.toPublicJSON() : hospital);
+  } catch (error) {
+    console.error('Get hospital error:', error);
+    res.status(500).json({ message: 'Failed to fetch hospital' });
+  }
+};
+
+export const getAvailableSchemes = async (req, res) => {
+  try {
+    const schemes = Hospital.getSchemes();
+    const schemeDetails = {
+      CMCHIS: { name: 'CMCHIS', description: 'Chief Minister\'s Comprehensive Health Insurance', type: 'government' },
+      PMJAY: { name: 'Ayushman Bharat PM-JAY', description: 'National Health Protection Scheme', type: 'government' },
+      TN_UHS: { name: 'TN UHS', description: 'Tamil Nadu Urban Health Scheme', type: 'government' },
+      STAR_HEALTH: { name: 'Star Health', description: 'Private Health Insurance', type: 'private' },
+      HDFC_ERGO: { name: 'HDFC ERGO', description: 'HDFC ERGO Health Insurance', type: 'private' },
+      ICICI_LOMBARD: { name: 'ICICI Lombard', description: 'ICICI Lombard Health Insurance', type: 'private' },
+      OTHER: { name: 'Other Schemes', description: 'Other Insurance Schemes', type: 'other' }
+    };
+
+    res.json(schemes.map(code => ({
+      code,
+      ...schemeDetails[code]
+    })));
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch schemes' });
   }
 };

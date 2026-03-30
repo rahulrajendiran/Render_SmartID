@@ -47,6 +47,30 @@ const hospitalApi = {
     scanNfc: async () => {
         const res = await api.post("/nfc/scan");
         return res.data;
+    },
+
+    // Get hospitals for insurance recommendations
+    getHospitals: async (params = {}) => {
+        const res = await api.get("/hospital/hospitals", { params });
+        return res.data;
+    },
+
+    // Get available insurance schemes
+    getSchemes: async () => {
+        const res = await api.get("/hospital/schemes");
+        return res.data;
+    },
+
+    // Create hospital (admin only)
+    createHospital: async (hospitalData) => {
+        const res = await api.post("/hospital", hospitalData);
+        return res.data;
+    },
+
+    // Get hospital by ID
+    getHospitalById: async (id) => {
+        const res = await api.get(`/hospital/${id}`);
+        return res.data;
     }
 };
 
