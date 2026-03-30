@@ -1,6 +1,3 @@
-import redis from 'redis';
-import { createClient } from 'redis';
-
 let redisClient = null;
 let isConnected = false;
 
@@ -20,37 +17,17 @@ const getRedisUrl = () => {
 };
 
 export const connectRedis = async () => {
-  if (process.env.REDIS_DISABLED === 'true') {
+  const redisDisabled = String(process.env.REDIS_DISABLED || '').toLowerCase();
+  
+  if (redisDisabled === 'true' || redisDisabled === '1') {
     console.log('Redis is disabled via environment variable');
-    return null;
-  }
-
-  try {
-    const url = getRedisUrl();
-    redisClient = createClient({ url });
-
-    redisClient.on('error', (err) => {
-      console.error('Redis Client Error:', err);
-      isConnected = false;
-    });
-
-    redisClient.on('connect', () => {
-      console.log('Redis connected successfully');
-      isConnected = true;
-    });
-
-    redisClient.on('disconnect', () => {
-      console.log('Redis disconnected');
-      isConnected = false;
-    });
-
-    await redisClient.connect();
-    return redisClient;
-  } catch (error) {
-    console.warn('Redis connection failed, continuing without cache:', error.message);
     isConnected = false;
     return null;
   }
+
+  console.log('Redis connection skipped (no Redis server configured)');
+  isConnected = false;
+  return null;
 };
 
 export const getRedisClient = () => redisClient;
