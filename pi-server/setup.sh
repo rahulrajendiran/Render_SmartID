@@ -25,7 +25,12 @@ sudo apt-get update
 
 # Install system dependencies
 echo "Installing system dependencies..."
-sudo apt-get install -y python3-pip python3-venv libffi-dev libssl-dev
+sudo apt-get install -y python3-pip python3-venv libffi-dev libssl-dev avahi-daemon
+
+# Enable and start avahi-daemon for mDNS (.local hostname resolution)
+echo "Configuring mDNS (avahi-daemon)..."
+sudo systemctl enable avahi-daemon
+sudo systemctl start avahi-daemon
 
 # Create virtual environment
 echo "Creating virtual environment..."
@@ -81,4 +86,9 @@ echo "Hardware connections:"
 echo "  - Fingerprint sensor: GPIO 14/15 (TX/RX)"
 echo "  - NFC Reader: SPI pins"
 echo "  - GSM Module: USB or GPIO"
+echo ""
+echo "mDNS Hostname:"
+echo "  Access from other devices via: http://$(hostname).local:5001"
+echo "  Default hostname: raspberrypi.local"
+echo "  To change hostname: sudo hostnamectl set-hostname <newname>"
 echo ""
